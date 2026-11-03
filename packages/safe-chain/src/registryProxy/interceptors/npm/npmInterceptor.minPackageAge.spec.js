@@ -67,7 +67,7 @@ describe("npmInterceptor minimum package age", async () => {
     "https://registry.npmjs.org/@babel/core",
     "https://registry.npmjs.org/@types/node",
     // With query parameters
-    "https://registry.npmjs.org/lodash?write=true",
+    "https://registry.npmjs.org/lodash?write=false",
     "https://registry.npmjs.org/@babel/core?param=value&other=test",
     // With fragments
     "https://registry.npmjs.org/lodash#readme",
@@ -144,6 +144,21 @@ describe("npmInterceptor minimum package age", async () => {
       const requestInterceptor = await interceptor.handleRequest(
         specialEndpoint
       );
+
+      assert.equal(requestInterceptor.modifiesResponse(), false);
+    });
+  }
+
+  for (const writeUrl of [
+    // npm reads the document with ?write=true before unpublish/deprecate
+    // and writes it back, so it must not lose any versions.
+    "https://registry.npmjs.org/lodash?write=true",
+    "https://registry.npmjs.org/@babel%2fcore?write=true",
+    "https://registry.npmjs.org/lodash?foo=bar&write=true",
+  ]) {
+    it(`modifyResponse should be false for write reads: ${writeUrl}`, async () => {
+      const interceptor = npmInterceptorForUrl(writeUrl);
+      const requestInterceptor = await interceptor.handleRequest(writeUrl);
 
       assert.equal(requestInterceptor.modifiesResponse(), false);
     });

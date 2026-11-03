@@ -23,8 +23,16 @@ export function modifyNpmInfoRequestHeaders(headers) {
  * @returns {boolean}
  */
 export function isPackageInfoUrl(url) {
+  const [urlWithoutFragment] = url.split("#");
   // Remove query string and fragment to get the actual path
-  const urlWithoutParams = url.split("?")[0].split("#")[0];
+  const [urlWithoutParams, query] = urlWithoutFragment.split("?");
+
+  // npm reads /<pkg>?write=true right before it writes the document back
+  // (for example unpublish and deprecate). Filtering versions out of that read
+  // makes npm write back a document without them, so leave it untouched.
+  if (query && new URLSearchParams(query).get("write") === "true") {
+    return false;
+  }
 
   // Tarball downloads end with .tgz
   if (urlWithoutParams.endsWith(".tgz")) return false;
